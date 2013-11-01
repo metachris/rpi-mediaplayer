@@ -84,7 +84,7 @@ def index_view(request):
     for dir in PLAYER_SETTINGS["media_search_directories"]:
         files["video"] += [f for f in findfiles(dir, PLAYER_SETTINGS["media_extensions"]["video"]) if f not in PLAYLIST["playlist"]]
         files["audio"] += [f for f in findfiles(dir, PLAYER_SETTINGS["media_extensions"]["audio"]) if f not in PLAYLIST["playlist"]]
-        files["image"] += [f for f in findfiles(dir, PLAYER_SETTINGS["media_extensions"]["image"]) if f not in PLAYLIST["playlist"]]
+#        files["image"] += [f for f in findfiles(dir, PLAYER_SETTINGS["media_extensions"]["image"]) if f not in PLAYLIST["playlist"]]
 
     print playlist_files
     print files
