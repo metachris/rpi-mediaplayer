@@ -8,3 +8,11 @@ media_search_directories: [
       /tmp,
       /media
     ]
+
+playback_commands:
+    video: omxplayer $1
+    audio: omxplayer $1
+    image: omxplayer $1
+
+zmq:
+    port: 5556
