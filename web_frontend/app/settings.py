@@ -1,4 +1,5 @@
 # Django settings for app project.
+import yaml
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -12,7 +13,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '/opt/rpi_mediaplayer/db.sqlite',                      # Or path to database file if using sqlite3.
+        'NAME': '/opt/rpi_mediaplayer/web_frontend/db.sqlite',                      # Or path to database file if using sqlite3.
 
         # The following settings are not used with sqlite3:
         'USER': '',
@@ -21,6 +22,10 @@ DATABASES = {
         'PORT': '',                      # Set to empty string for default.
     }
 }
+
+PLAYER_SETTINGS_YAML_FILE = "/opt/rpi_mediaplayer/player_settings.yaml"
+PLAYER_SETTINGS_DEFAULT_YAML_FILE = "/opt/rpi_mediaplayer/player_settings_default.yaml"
+PLAYLIST_YAML_FILE = "/opt/rpi_mediaplayer/playlist.yaml"
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts

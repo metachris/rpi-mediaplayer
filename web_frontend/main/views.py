@@ -11,9 +11,24 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 
 from django.contrib import auth
 from django.core.urlresolvers import reverse_lazy
+from django.conf import settings
 
 #from forms import OwnerForm, HeaterForm
 #from models import Contact, Heater
+import os
+import yaml
+import shutil
+
+def findfiles(dir_base, file_extensions):
+    ret = []
+    for root, dirs, files in os.walk(dir_base):
+        for file in files:
+            if not "." in file:
+                continue
+            ext = file.split(".")[-1]
+            if ext in file_extensions:
+                ret.append(os.path.join(root, file))
+    return ret
 
 
 class LogoutView(View):
@@ -21,78 +36,69 @@ class LogoutView(View):
         auth.logout(request)
         return HttpResponseRedirect("/")
 
-#
-## ======
-## Owners
-## ======
-#class OwnerList(ListView):
-#    model = Contact
-#
-#
-#class OwnerDetail(DetailView):
-#    model = Contact
-#
-#
-#class OwnerCreate(CreateView):
-#    form_class = OwnerForm
-#    model = Contact
-#
-#    def form_valid(self, form):
-#        form.instance.created_by = self.request.user
-#        return super(OwnerCreate, self).form_valid(form)
-#
-#
-#class OwnerUpdate(UpdateView):
-#    template_name = "main/owner_edit.html"
-#    model = Contact
-#
-#
-#class OwnerDelete(DeleteView):
-#    model = Contact
-#    success_url = reverse_lazy('owner_list')
-#
-#
-## ==========
-## Heizkörper
-## ==========
-#def heater_list(request):
-#    heater_all_list = Heater.objects.all()
-#    paginator = Paginator(heater_all_list, 25)
-#
-#    page = request.GET.get('page')
-#    try:
-#        heaters = paginator.page(page)
-#    except PageNotAnInteger:
-#        # If page is not an integer, deliver first page.
-#        heaters = paginator.page(1)
-#    except EmptyPage:
-#        # If page is out of range (e.g. 9999), deliver last page of results.
-#        heaters = paginator.page(paginator.num_pages)
-#    return render(request, 'heater/heater_list.html', {"heaters": heaters})
-#
-#
-#class HeaterDetail(DetailView):
-#    model = Heater
-#    template_name = "heater/heater_detail.html"
-#
-#
-#class HeaterCreate(CreateView):
-#    form_class = HeaterForm
-#    model = Heater
-#    template_name = "heater/heater_form.html"
-#
-#    def form_valid(self, form):
-#        form.instance.created_by = self.request.user
-#        return super(HeaterCreate, self).form_valid(form)
-#
-#
-#class HeaterUpdate(UpdateView):
-#    template_name = "heater/heater_edit.html"
-#    model = Heater
-#
-#
-#class HeaterDelete(DeleteView):
-#    model = Heater
-#    success_url = reverse_lazy('heater_list')
-#    template_name = "heater/heater_confirm_delete.html"
-#
+
+def settings_restore(request):
+    shutil.copyfile(settings.PLAYER_SETTINGS_DEFAULT_YAML_FILE, settings.PLAYER_SETTINGS_YAML_FILE)
+    return HttpResponseRedirect("/settings/")
+
+
+def settings_view(request):
+    if request.method == 'POST': # If the form has been submitted...
+        with open(settings.PLAYER_SETTINGS_YAML_FILE, 'w') as outfile:
+            outfile.write(request.POST.get("settings"))
+            return HttpResponseRedirect("/settings/")
+
+    player_settings = open(settings.PLAYER_SETTINGS_YAML_FILE).read()
+    return render(request, 'main/settings.html', {"settings": player_settings})
+
+
+def index_view(request):
+    PLAYER_SETTINGS = yaml.load(open(settings.PLAYER_SETTINGS_YAML_FILE))
+    PLAYLIST = yaml.load(open(settings.PLAYLIST_YAML_FILE))
+
+    files = {
+        "video": [],
+        "audio": [],
+        "image": [],
+    }
+
+    playlist_files = [
+        #{ "fn": ..., "media": video/audio/image, "existing": True/False}
+    ]
+
+    for fn in PLAYLIST["playlist"]:
+        ext = fn.split(".")[-1]
+        media_type = None
+        if ext in PLAYER_SETTINGS["media_extensions"]["video"]:
+            media_type = "video"
+        elif ext in PLAYER_SETTINGS["media_extensions"]["audio"]:
+            media_type = "audio"
+        elif ext in PLAYER_SETTINGS["media_extensions"]["image"]:
+            media_type = "image"
+        else:
+            raise Exception("Not recognized file type for fn '%s'" % fn)
+
+        playlist_files.append({ "fn": fn, "media": media_type, "existing": os.path.isfile(fn) })
+
+
+    for dir in PLAYER_SETTINGS["media_search_directories"]:
+        files["video"] += [f for f in findfiles(dir, PLAYER_SETTINGS["media_extensions"]["video"]) if f not in PLAYLIST["playlist"]]
+        files["audio"] += [f for f in findfiles(dir, PLAYER_SETTINGS["media_extensions"]["audio"]) if f not in PLAYLIST["playlist"]]
+        files["image"] += [f for f in findfiles(dir, PLAYER_SETTINGS["media_extensions"]["image"]) if f not in PLAYLIST["playlist"]]
+
+    print playlist_files
+    print files
+    return render(request, 'index.html', {"media_files": files, "playlist_files": playlist_files })
+
+
+def playlist_save(request):
+    if request.method == 'POST': # If the form has been submitted...
+        data = {
+            "playlist": request.POST.getlist("fn[]"),
+        }
+        print data
+        with open(settings.PLAYLIST_YAML_FILE, 'w') as outfile:
+            outfile.write( yaml.dump(data, default_flow_style=True) )
+
+        return HttpResponseRedirect("/")
+    return HttpResponse("no post")

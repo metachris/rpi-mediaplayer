@@ -1,0 +1,10 @@
+media_extensions:
+    video: [mp4, mov, avi]
+    audio: [mp3]
+    image: [png, jpg, jpeg]
+
+media_search_directories: [
+      /Users/chris/Movies,
+      /tmp,
+      /media
+    ]

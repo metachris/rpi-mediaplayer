@@ -1,3 +1,53 @@
 {% extends "base.html" %}
 
-{% block body %}Hello World!{% endblock %}
+{% block header_bottom %}
+<style>
+    .connectedSortable { list-style-type: none; margin: 0; padding: 0 0 2.5em; float: left; margin-right: 10px; }
+    .connectedSortable li { margin: 0 5px 5px 5px; padding: 5px; font-size: 1.2em; width: 340px; cursor:pointer; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-6">
+        <form action="/playlist_save/" method="post">
+        {% csrf_token %}
+
+        <h3>Playlist <input type="submit" value="Save" class="btn btn-success btn-xs" /></h3>
+
+        <ul id="sortable1" class="connectedSortable">
+            {% for pf in playlist_files %}
+                <li class="ui-state-default"><span class="glyphicon glyphicon-{% if pf.media == 'video' %}film{% elif pf.media == 'audio' %}headphones{% elif pf.media == 'image' %}picture{% endif %}"></span> {{ pf.fn }} <input type="hidden" name="fn[]" value="{{ pf.fn }}" /></li>
+            {% endfor %}
+        </ul>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <h3>Media</h3>
+        <ul id="sortable2" class="connectedSortable">
+            {% for fn in media_files.video %}
+                <li class="ui-state-default"><span class="glyphicon glyphicon-film"></span> {{ fn }}<input type="hidden" name="fn[]" value="{{ fn }}" /></li>
+            {% endfor %}
+            {% for fn in media_files.audio %}
+                <li class="ui-state-default"><span class="glyphicon glyphicon-headphones"></span> {{ fn }}<input type="hidden" name="fn[]" value="{{ fn }}" /></li>
+            {% endfor %}
+            {% for fn in media_files.image %}
+                <li class="ui-state-default"><span class="glyphicon glyphicon-picture"></span> {{ fn }}<input type="hidden" name="fn[]" value="{{ fn }}" /></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block js_bottom %}
+<script>
+$(function() {
+    $( ".connectedSortable" ).sortable({
+        connectWith: ".connectedSortable"
+    }).disableSelection();
+});
+</script>
+{% endblock %}

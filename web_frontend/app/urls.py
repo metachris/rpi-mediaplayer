@@ -1,7 +1,6 @@
 from django.conf.urls import patterns, include, url
 from django.views.generic import TemplateView
 
-from main.views import LogoutView
 from main.views import *
 
 from django.contrib.auth.decorators import login_required, permission_required
@@ -12,7 +11,11 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     # Home
-    url(r'^$', TemplateView.as_view(template_name="index.html"), name='home'),
+    url(r'^$', index_view, name='home'),
+
+    url(r'^playlist_save/$', playlist_save, name="playlist_save"),
+    url(r'^settings/$', settings_view, name="settings"),
+    url(r'^settings/restore_defaults$', settings_restore, name="settings_restore"),
 
     # Login, Logout
     (r'^accounts/login/$', 'django.contrib.auth.views.login'),

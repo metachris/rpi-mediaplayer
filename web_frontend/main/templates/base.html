@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{% block title %}Bitmax AR{% endblock %}</title>
+    <title>{% block title %}RPi MediaPlayer{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap -->
     <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="{{ STATIC_URL }}css/custom.css" rel="stylesheet" media="screen">
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
     <script src="{{ STATIC_URL }}js/html5shiv.js"></script>
     <script src="{{ STATIC_URL }}js/respond.min.js"></script>
     <![endif]-->
+    {% block header_bottom %}{% endblock %}
 </head>
 <body>
 
@@ -24,24 +26,25 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="/">Bitmax AR</a>
+            <a class="navbar-brand" href="/">RPi MediaPlayer</a>
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <!--<li class="active"><a href="#">Link</a></li>-->
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Stammdaten <b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="/owners/">Eigentümer</a></li>
-                        <li><a href="/heater/">Heizkörper</a></li>
-                        <li class="divider"></li>
-                        <li><a href="/realty/">Liegenschaften</a></li>
-                        <li class="divider"></li>
-                        <li class="dropdown-header">Nav header</li>
-                        <li><a href="#">Separated link</a></li>
-                        <li><a href="#">One more separated link</a></li>
-                    </ul>
-                </li>
+                <li><a href="/settings/">Settings</a></li>
+                <!--<li class="dropdown">-->
+                    <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown">Stammdaten <b class="caret"></b></a>-->
+                    <!--<ul class="dropdown-menu">-->
+                        <!--<li><a href="/owners/">Eigentümer</a></li>-->
+                        <!--<li><a href="/heater/">Heizkörper</a></li>-->
+                        <!--<li class="divider"></li>-->
+                        <!--<li><a href="/realty/">Liegenschaften</a></li>-->
+                        <!--<li class="divider"></li>-->
+                        <!--<li class="dropdown-header">Nav header</li>-->
+                        <!--<li><a href="#">Separated link</a></li>-->
+                        <!--<li><a href="#">One more separated link</a></li>-->
+                    <!--</ul>-->
+                <!--</li>-->
                 <!--<li><a href="#">Link</a></li>-->
                 <!--<li><a href="#">Link</a></li>-->
                 <!--<li class="dropdown">-->
@@ -57,13 +60,13 @@
                     <!--</ul>-->
                 <!--</li>-->
             </ul>
-            <ul class="nav navbar-nav navbar-right">
-                {% if user.is_authenticated %}
-                <li><a href="#">{{ user }}</a></li><li><a href="/logout/">Logout</a></li>
-                {% else %}
-                <li><a href="/accounts/login/?next=/">Login</a></li>
-                {% endif %}
-            </ul>
+            <!--<ul class="nav navbar-nav navbar-right">-->
+                <!--{% if user.is_authenticated %}-->
+                <!--<li><a href="#">{{ user }}</a></li><li><a href="/logout/">Logout</a></li>-->
+                <!--{% else %}-->
+                <!--<li><a href="/accounts/login/?next=/">Login</a></li>-->
+                <!--{% endif %}-->
+            <!--</ul>-->
         </div><!--/.nav-collapse -->
     </div>
     </div>
@@ -73,7 +76,8 @@
 </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="//code.jquery.com/jquery.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
 {% block js_bottom %}{% endblock %}
