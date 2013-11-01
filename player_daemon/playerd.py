@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 import sys
 import signal
@@ -5,6 +7,7 @@ import time
 import logging
 import yaml
 import subprocess
+import json
 
 from optparse import OptionParser
 from threading import Thread
@@ -13,6 +16,7 @@ from daemon import Daemon
 
 from tornado.ioloop import IOLoop
 from tornado.tcpserver import TCPServer
+from tornado.escape import _unicode
 
 DIR_SCRIPT = os.path.dirname(os.path.realpath(__file__))
 
@@ -49,6 +53,13 @@ def check_pid(pid):
         return True
 
 
+def safe_unicode(s):
+    try:
+        return _unicode(s)
+    except UnicodeDecodeError:
+        return repr(s)
+
+
 # Each connected client gets a TCPConnection object
 class TCPConnection(object):
     def __init__(self, daemon, stream, address):
@@ -68,7 +79,8 @@ class TCPConnection(object):
         # Process input
         response = self.daemon.handle_msg(data)
         if response:
-            self.stream.write("%s\n" % response.strip())
+            r = json.dumps(response)
+            self.stream.write("%s\n" % r)
 
         # Continue reading on this connection
         self.stream.read_until('\n', self._on_read_line)
@@ -169,6 +181,8 @@ class MyDaemon(Daemon):
     def handle_msg(self, msg):
         # Incoming network messages
         logger.info("msg: %s" % msg)
+        if msg == "get_current_file":
+            return { "current_file": self.playerthread.current_file }
 
 
 # Console start
