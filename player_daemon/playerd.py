@@ -38,11 +38,11 @@ def signal_handler(signal, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-
 # Each connected client gets a TCPConnection object
 class TCPConnection(object):
-    def __init__(self, stream, address):
+    def __init__(self, daemon, stream, address):
         logger.debug('- new connection from %s' % repr(address))
+        self.daemon = daemon
         self.stream = stream
         self.address = address
         self.stream.set_close_callback(self._on_close)
@@ -55,7 +55,7 @@ class TCPConnection(object):
             return
 
         # Process input
-        response = self.handle_msg(data)
+        response = self.daemon.handle_msg(data)
         if response:
             self.stream.write("%s\n" % response.strip())
 
@@ -68,33 +68,33 @@ class TCPConnection(object):
     def _on_close(self):
         logger.debug('- client quit %s' % repr(self.address))
 
-    def handle_msg(self, msg):
-        logger.info("msg: %s" % msg)
-
 
 # The main server class
 class MyTCPServer(TCPServer):
-    def __init__(self, io_loop=None, ssl_options=None, **kwargs):
+    def __init__(self, daemon, io_loop=None, ssl_options=None, **kwargs):
         TCPServer.__init__(self, io_loop=io_loop, ssl_options=ssl_options, **kwargs)
+        self.daemon = daemon
 
     def handle_stream(self, stream, address):
-        TCPConnection(stream, address)
+        TCPConnection(self.daemon, stream, address)
 
 
 class PlayerThread(Thread):
     is_cancelled = False
     is_finished = False
     def __init__(self):
-        # If is_replaceable is True and another timeout with the same command is added, the
-        # existing timeout will be suspended and only the new one executed.
         Thread.__init__(self)
 
     def run(self):
-        while True:
+        while not self.is_finished and not self.is_cancelled:
             for fn in playlist["playlist"]:
+                if self.is_finished or self.is_cancelled:
+                    return
+
                 if not os.path.isfile(fn):
                     logger.error("Could not find file '%s'" % fn)
                     continue
+
                 ext = fn.split(".")[-1]
                 if ext in player_settings["media_extensions"]["video"]:
                     cmd = player_settings["playback_commands"]["video"]
@@ -102,16 +102,24 @@ class PlayerThread(Thread):
                     cmd = player_settings["playback_commands"]["audio"]
                 elif ext in player_settings["media_extensions"]["image"]:
                     cmd = player_settings["playback_commands"]["image"]
+
                 cmd = cmd.replace("$1", fn)
                 logger.info("Execute: %s" % cmd)
-
                 time.sleep(5)
+
+    def stop(self, kill_player=False):
+        self.is_finished = True
 
 
 class MyDaemon(Daemon):
     def run(self):
         try:
-            server = MyTCPServer()
+            # Start Player Thread
+            self.playerthread = PlayerThread()
+            self.playerthread.start()
+
+            # Start Tornado
+            server = MyTCPServer(self)
             server.listen(player_settings["zmq"]["port"])
             IOLoop.instance().start()
 #            logger.info("Daemon started")
@@ -123,7 +131,13 @@ class MyDaemon(Daemon):
             logger.exception(e)
 
         finally:
+            self.playerthread.stop()
             logger.info("Daemon stopped")
+
+
+    def handle_msg(self, msg):
+        # Incoming network messages
+        logger.info("msg: %s" % msg)
 
 
 # Console start

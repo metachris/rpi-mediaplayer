@@ -6,3 +6,5 @@
 env
 settings_dev.py
 settings_production.py
+player_daemon/rpi_mediaplayerd.log
+player_daemon/rpi_mediaplayerd.pid
