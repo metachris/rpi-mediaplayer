@@ -1,0 +1,8 @@
+*.pyc
+*.pyo
+*.pot
+*.log
+.idea
+env
+settings_dev.py
+settings_production.py

@@ -1,0 +1,15 @@
+<p>
+<div class="btn-group">
+    {% if list.has_previous %}
+        <a class="btn btn-default" href="?page=1">&laquo;</a>
+        <a class="btn btn-default" href="?page={{ list.previous_page_number }}">&lsaquo;</a>
+    {% endif %}
+
+    <button type="button" class="btn btn-default">Page {{ list.number }} of {{ list.paginator.num_pages }}</button>
+
+    {% if list.has_next %}
+        <a class="btn btn-default" href="?page={{ list.next_page_number }}">&rsaquo;</a>
+        <a class="btn btn-default" href="?page={{ list.paginator.num_pages }}">&raquo;</a>
+    {% endif %}
+</div>
+</p>

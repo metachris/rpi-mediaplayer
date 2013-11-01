@@ -1,0 +1,4 @@
+Django==1.5.4
+South==0.8.2
+-e git://github.com/django-debug-toolbar/django-debug-toolbar.git@7e4ecfd04cfe61b51e1fd6fdf0ce1c800a3ebb3b#egg=django_debug_toolbar-dev
+wsgiref==0.1.2
