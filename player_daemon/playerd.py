@@ -4,6 +4,7 @@ import signal
 import time
 import logging
 import yaml
+import subprocess
 
 from optparse import OptionParser
 from threading import Thread
@@ -36,6 +37,16 @@ player_settings = yaml.load(open(FN_PLAYER_SETTINGS))
 def signal_handler(signal, frame):
     sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
+
+
+def check_pid(pid):
+    """ Check For the existence of a unix pid. Sending signal 0 does nothing bad."""
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
 
 
 # Each connected client gets a TCPConnection object
@@ -80,6 +91,9 @@ class MyTCPServer(TCPServer):
 
 
 class PlayerThread(Thread):
+    current_file = None
+    current_pid = None
+
     is_cancelled = False
     is_finished = False
     def __init__(self):
@@ -103,9 +117,28 @@ class PlayerThread(Thread):
                 elif ext in player_settings["media_extensions"]["image"]:
                     cmd = player_settings["playback_commands"]["image"]
 
-                cmd = cmd.replace("$1", fn)
-                logger.info("Execute: %s" % cmd)
-                time.sleep(5)
+                # Prepare command to execute
+                self.current_file = fn.strip()
+                if " " in fn and not fn.startswith('"'):
+                    fn = '"%s"' % fn
+                cmd_list = cmd.split(" ")
+                for i in xrange(len(cmd_list)):
+                    if cmd_list[i] == "$1":
+                        cmd_list[i] = fn
+
+                # Execute command and wait for it to finish
+                try:
+                    logger.info("Execute: %s" % (cmd_list))
+                    pipe = subprocess.Popen(cmd_list)
+                    self.current_pid = pipe.pid
+                    logger.info("- pid: %s" % self.current_pid)
+                    while pipe.poll() is None:
+                        time.sleep(1)
+                    self.current_file = None
+                    self.current_pid = None
+                    logger.info("- finished")
+                except Exception as e:
+                    logger.exception(e)
 
     def stop(self, kill_player=False):
         self.is_finished = True
@@ -120,9 +153,8 @@ class MyDaemon(Daemon):
 
             # Start Tornado
             server = MyTCPServer(self)
-            server.listen(player_settings["zmq"]["port"])
+            server.listen(player_settings["playerd"]["port"])
             IOLoop.instance().start()
-#            logger.info("Daemon started")
 
         except SystemExit:
             logger.info("Shutting down via signal")
@@ -133,7 +165,6 @@ class MyDaemon(Daemon):
         finally:
             self.playerthread.stop()
             logger.info("Daemon stopped")
-
 
     def handle_msg(self, msg):
         # Incoming network messages

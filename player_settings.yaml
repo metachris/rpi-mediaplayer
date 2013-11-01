@@ -10,9 +10,9 @@ media_search_directories: [
     ]
 
 playback_commands:
-    video: omxplayer $1
+    video: ls $1
     audio: omxplayer $1
     image: omxplayer $1
 
-zmq:
+playerd:
     port: 5556
