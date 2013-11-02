@@ -108,10 +108,13 @@ def playlist_save(request):
     if request.method == 'POST': # If the form has been submitted...
         data = {
             "playlist": request.POST.getlist("fn[]"),
+            "autostart": False,
+            "loop": 0,
+            "mode": "random",
         }
         print data
         with open(settings.PLAYLIST_YAML_FILE, 'w') as outfile:
-            outfile.write( yaml.dump(data, default_flow_style=True) )
+            outfile.write(yaml.dump(data, default_flow_style=True))
 
         send_cmd("do_reload_playlist")
         return HttpResponseRedirect("/")

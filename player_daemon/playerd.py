@@ -102,6 +102,8 @@ class PlayerThread(Thread):
     current_pid = None
     cnt_file_current = 0
 
+    playback_cnt = 0  # number of total playbacks so far
+
     # states: 0=stopped, 1=playing
     state = 0
 
@@ -113,10 +115,10 @@ class PlayerThread(Thread):
         Thread.__init__(self)
         self.load_playlist()
         self.cnt_file_current = -1
-        self.state = 0  # playing
+        self.state = 1 if self.playlist["autostart"] else 0
 
     def load_playlist(self):
-        self.player_stop()
+        self._player_stop()
         self.playlist = yaml.load(open(PLAYLISTFILE))
         self.files = self.playlist["playlist"]
         self.cnt_file_current = -1
@@ -126,6 +128,14 @@ class PlayerThread(Thread):
         while not self.is_finished and not self.is_cancelled:
             if self.is_finished or self.is_cancelled:
                 return
+
+            if self.playlist["loop"] > 0:
+                if self.playback_cnt / len(self.files) >= self.playlist["loop"]:
+                    self.player_stop()
+
+                    # Update filename to display in web frontend
+                    self.last_file = self.files[(self.cnt_file_current + 1) % len(self.files)]
+                    continue
 
             if self.state == 0:
 #                logger.info("PlayerThread paused. Wait 1 sec.")
@@ -147,8 +157,10 @@ class PlayerThread(Thread):
                 cmd = player_settings["playback_commands"]["video"]
             elif ext in player_settings["media_extensions"]["audio"]:
                 cmd = player_settings["playback_commands"]["audio"]
+                continue  # not yet implemented
             elif ext in player_settings["media_extensions"]["image"]:
                 cmd = player_settings["playback_commands"]["image"]
+                continue  # not yet implemented
 
             # Prepare command to execute
             self.current_file = fn.strip()
@@ -171,15 +183,23 @@ class PlayerThread(Thread):
             except Exception as e:
                 logger.exception(e)
 
+            self.playback_cnt += 1
+        logger.info("PlayerThread: end of main thread")
+
     def shutdown(self, kill_player=False):
         """ Shutdown """
         logger.info("PlayerThread: shutdown()")
         self.is_finished = True
         if kill_player:
-            self.player_stop()
+            self._player_stop()
 
     def player_stop(self):
         logger.info("PlayerThread: stop()")
+        self.playback_cnt = 0
+        self.loop_cnt = 0
+        self._player_stop()
+
+    def _player_stop(self):
         self.state = 0
         if self.current_pid:
             os.kill(self.current_pid, signal.SIGTERM)
@@ -198,21 +218,21 @@ class PlayerThread(Thread):
 
     def player_next(self):
         logger.info("PlayerThread: next()")
-        self.player_stop()
+        self._player_stop()
         self.cnt_file_current += 1
         time.sleep(1)
         self.player_start()
 
     def player_prev(self):
         logger.info("PlayerThread: prev()")
-        self.player_stop()
+        self._player_stop()
         self.cnt_file_current -= 1
         time.sleep(1)
         self.player_start()
 
     def player_first(self):
         logger.info("PlayerThread: next()")
-        self.player_stop()
+        self._player_stop()
         self.cnt_file_current = -1
         time.sleep(1)
         self.player_start()
