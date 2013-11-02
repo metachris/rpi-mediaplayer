@@ -129,6 +129,12 @@ class PlayerThread(Thread):
             if self.is_finished or self.is_cancelled:
                 return
 
+            # Handle pause or no files
+            if self.state == 0 or len(self.files) == 0:
+                time.sleep(1)
+                continue
+
+            # If number of loops specified, stop playing afterwards.
             if self.playlist["loop"] > 0:
                 if self.playback_cnt / len(self.files) >= self.playlist["loop"]:
                     self.player_stop()
@@ -137,18 +143,14 @@ class PlayerThread(Thread):
                     self.last_file = self.files[(self.cnt_file_current + 1) % len(self.files)]
                     continue
 
-            if self.state == 0:
-#                logger.info("PlayerThread paused. Wait 1 sec.")
-                time.sleep(1)
-                continue
-
-            # Try to play file
+            # Get the current file
             self.cnt_file_current = (self.cnt_file_current + 1) % len(self.files)
             fn = self.files[self.cnt_file_current]
             self.last_file = fn
             logger.info("PlayerThread: trying to play file %s (#%s)" % (fn, self.cnt_file_current))
             if not os.path.isfile(fn):
                 logger.error("Could not find file '%s'" % fn)
+                time.sleep(0.5)
                 continue
 
             # Find the right command
@@ -157,9 +159,11 @@ class PlayerThread(Thread):
                 cmd = player_settings["playback_commands"]["video"]
             elif ext in player_settings["media_extensions"]["audio"]:
                 cmd = player_settings["playback_commands"]["audio"]
+                time.sleep(1)
                 continue  # not yet implemented
             elif ext in player_settings["media_extensions"]["image"]:
                 cmd = player_settings["playback_commands"]["image"]
+                time.sleep(1)
                 continue  # not yet implemented
 
             # Prepare command to execute
