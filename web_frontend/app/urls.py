@@ -16,6 +16,7 @@ urlpatterns = patterns('',
     url(r'^playlist_save/$', playlist_save, name="playlist_save"),
     url(r'^settings/$', settings_view, name="settings"),
     url(r'^settings/restore_defaults$', settings_restore, name="settings_restore"),
+    url(r'^ajax/player_cmd$', ajax_cmd_playerd, name="ajax_player_cmd"),
 
     # Login, Logout
     (r'^accounts/login/$', 'django.contrib.auth.views.login'),

@@ -18,6 +18,9 @@ from django.conf import settings
 import os
 import yaml
 import shutil
+import socket
+import json
+
 
 def findfiles(dir_base, file_extensions):
     ret = []
@@ -29,6 +32,16 @@ def findfiles(dir_base, file_extensions):
             if ext in file_extensions:
                 ret.append(os.path.join(root, file))
     return ret
+
+
+def send_cmd(cmd):
+    """ Send a command to playerd and returns the response """
+    PLAYER_SETTINGS = yaml.load(open(settings.PLAYER_SETTINGS_YAML_FILE))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(("localhost", PLAYER_SETTINGS["playerd"]["port"]))
+    s.send("%s\n" % cmd.strip())
+    ret = s.recv(4096)
+    return json.loads(ret)
 
 
 class LogoutView(View):
@@ -100,5 +113,13 @@ def playlist_save(request):
         with open(settings.PLAYLIST_YAML_FILE, 'w') as outfile:
             outfile.write( yaml.dump(data, default_flow_style=True) )
 
+        send_cmd("do_reload_playlist")
         return HttpResponseRedirect("/")
     return HttpResponse("no post")
+
+
+def ajax_cmd_playerd(request):
+    cmd = request.GET.get("cmd")
+    ret = send_cmd(cmd)
+    print "sent '%s' to playerd. response: '%s'" % (cmd, ret)
+    return HttpResponse(str(ret))

@@ -1,12 +1,11 @@
 media_extensions:
-    video: [mp4, mov, avi]
+    video: [mp4, mov]
     audio: [mp3]
     image: [png, jpg, jpeg]
 
 media_search_directories: [
-      /Users/chris/Movies,
-      /tmp,
-      /media
+      /media,
+      /home/pi,
     ]
 
 playback_commands:

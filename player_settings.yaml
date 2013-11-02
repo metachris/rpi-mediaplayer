@@ -4,13 +4,15 @@ media_extensions:
     image: [png, jpg, jpeg]
 
 media_search_directories: [
+      /media,
+      /home/pi,
       /Users/chris/Movies,
+      /Users/chris/Projects/Uli/Testvideos_2/videos,
       /tmp,
-      /media
     ]
 
 playback_commands:
-    video: ls $1
+    video: /Users/chris/Tools/mplayer2.app/Contents/MacOS/mplayer2 $1
     audio: omxplayer $1
     image: omxplayer $1
 

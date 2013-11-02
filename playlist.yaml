@@ -1,2 +1,4 @@
-{playlist: [!!python/unicode '/Users/chris/Movies/a.mp4', !!python/unicode '/Users/chris/Movies/x3.avi',
-    !!python/unicode '/Users/chris/Movies/b.mov', !!python/unicode 'c.mp3']}
+{playlist: [!!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/d.mp4',
+    !!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/a.mp4', !!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/b.mp4',
+    !!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/c.mp4', !!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/e.mp4',
+    !!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/f.mp4']}

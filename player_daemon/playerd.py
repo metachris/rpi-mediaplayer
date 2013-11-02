@@ -32,8 +32,6 @@ logger.setLevel(LOGLEVEL)
 
 # Settings and Playlist
 PLAYLISTFILE = os.path.join(os.path.abspath(os.path.join(DIR_SCRIPT, os.pardir)), "playlist.yaml")
-playlist = yaml.load(open(PLAYLISTFILE))
-
 FN_PLAYER_SETTINGS = os.path.join(os.path.abspath(os.path.join(DIR_SCRIPT, os.pardir)), "player_settings.yaml")
 player_settings = yaml.load(open(FN_PLAYER_SETTINGS))
 
@@ -71,9 +69,10 @@ class TCPConnection(object):
 
         # Process input
         response = self.daemon.handle_msg(data)
-        if response:
-            r = json.dumps(response)
-            self.stream.write("%s\n" % r)
+        if not response:
+            response = { "data": 1 }
+        r = json.dumps(response)
+        self.stream.write("%s\n" % r)
 
         # Continue reading on this connection
         self.stream.read_until('\n', self._on_read_line)
@@ -96,6 +95,7 @@ class MyTCPServer(TCPServer):
 
 
 class PlayerThread(Thread):
+    playlist = None
     files = []
     last_file = None
     current_file = None
@@ -111,9 +111,16 @@ class PlayerThread(Thread):
 
     def __init__(self):
         Thread.__init__(self)
-        self.files = playlist["playlist"]
-        self.cnt_file_current = 0
+        self.load_playlist()
+        self.cnt_file_current = -1
         self.state = 0  # playing
+
+    def load_playlist(self):
+        self.player_stop()
+        self.playlist = yaml.load(open(PLAYLISTFILE))
+        self.files = self.playlist["playlist"]
+        self.cnt_file_current = -1
+        logger.info("Playlist: %s" % self.files)
 
     def run(self):
         while not self.is_finished and not self.is_cancelled:
@@ -126,7 +133,9 @@ class PlayerThread(Thread):
                 continue
 
             # Try to play file
+            self.cnt_file_current = (self.cnt_file_current + 1) % len(self.files)
             fn = self.files[self.cnt_file_current]
+            self.last_file = fn
             logger.info("PlayerThread: trying to play file %s (#%s)" % (fn, self.cnt_file_current))
             if not os.path.isfile(fn):
                 logger.error("Could not find file '%s'" % fn)
@@ -143,8 +152,6 @@ class PlayerThread(Thread):
 
             # Prepare command to execute
             self.current_file = fn.strip()
-#            if " " in fn and not fn.startswith('"'):
-#                fn = '"%s"' % fn
             cmd_list = cmd.split(" ")
             for i in xrange(len(cmd_list)):
                 if cmd_list[i] == "$1":
@@ -158,14 +165,11 @@ class PlayerThread(Thread):
                 logger.info("- pid: %s" % self.current_pid)
                 while pipe.poll() is None:
                     time.sleep(0.5)
-                self.last_file = self.current_file
                 self.current_file = None
                 self.current_pid = None
                 logger.info("- finished playback of '%s'" % fn)
             except Exception as e:
                 logger.exception(e)
-
-            self.cnt_file_current = (self.cnt_file_current + 1) % len(self.files)
 
     def shutdown(self, kill_player=False):
         """ Shutdown """
@@ -176,13 +180,13 @@ class PlayerThread(Thread):
 
     def player_stop(self):
         logger.info("PlayerThread: stop()")
+        self.state = 0
         if self.current_pid:
             os.kill(self.current_pid, signal.SIGTERM)
             logger.info("- killed '%s' with pid %s" % (self.current_file, self.current_pid))
             self.cnt_file_current -= 1
         self.current_file = None
         self.current_pid = None
-        self.state = 0
 
     def player_start(self):
         logger.info("PlayerThread: start()")
@@ -195,19 +199,22 @@ class PlayerThread(Thread):
     def player_next(self):
         logger.info("PlayerThread: next()")
         self.player_stop()
-        self.cnt_file_current = (self.cnt_file_current + 1) % len(self.files)
+        self.cnt_file_current += 1
+        time.sleep(1)
         self.player_start()
 
     def player_prev(self):
         logger.info("PlayerThread: prev()")
         self.player_stop()
-        self.cnt_file_current = (self.cnt_file_current - 1) % len(self.files)
+        self.cnt_file_current -= 1
+        time.sleep(1)
         self.player_start()
 
     def player_first(self):
         logger.info("PlayerThread: next()")
         self.player_stop()
-        self.cnt_file_current = 0
+        self.cnt_file_current = -1
+        time.sleep(1)
         self.player_start()
 
 
@@ -262,6 +269,12 @@ class MyDaemon(Daemon):
 
         elif msg == "do_first":
             self.playerthread.player_first()
+
+        elif msg == "do_reload_playlist":
+            self.playerthread.load_playlist()
+
+        else:
+            return { "error": "command not understood" }
 
 
 # Console start
