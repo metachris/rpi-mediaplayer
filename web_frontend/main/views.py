@@ -110,7 +110,7 @@ def playlist_save(request):
             "playlist": request.POST.getlist("fn[]"),
             "autostart": False,
             "loop": 0,
-            "mode": "random",
+            "mode": "normal",
         }
         print data
         with open(settings.PLAYLIST_YAML_FILE, 'w') as outfile:

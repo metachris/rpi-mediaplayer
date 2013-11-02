@@ -1,2 +1,2 @@
-{autostart: true, loop: 1, mode: random, playlist: [!!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/a.mp4',
+{autostart: true, loop: 0, mode: normal, playlist: [!!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/a.mp4',
     !!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/b.mp4', !!python/unicode '/Users/chris/Projects/Uli/Testvideos_2/videos/c.mp4']}

@@ -46,20 +46,31 @@
 
         <div style="clear:both;"></div>
 
-        <!--<h4>Mode</h4>-->
-        <!--<div class="radio">-->
-            <!--<label><input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>Normal</label>-->
-        <!--</div>-->
-        <!--<div class="radio">-->
-            <!--<label><input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>Random</label>-->
-        <!--</div>-->
+        <!--<table style="vertical-align: top; margin-bottom:20px;">-->
+            <!--<tr>-->
+                <!--<td style="padding-right:50px; vertical-align: top;">-->
+                    <!--<h4>Mode</h4>-->
+                    <!--<div class="radio">-->
+                        <!--<label><input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>Normal</label>-->
+                    <!--</div>-->
+                    <!--<div class="radio">-->
+                        <!--<label><input type="radio" name="optionsRadios" id="optionsRadios1" value="option1" checked>Random</label>-->
+                    <!--</div>-->
+                <!--</td>-->
+                <!--<td style="padding-right:50px; vertical-align: top;">-->
+                    <!--<h4>Loop</h4>-->
+                    <!--<input type="number" class="form-control" min="0" placeholder="0" style="width:50px" /> <small>0 for endless</small>-->
+                <!--</td>-->
+                <!--<td style="vertical-align: top;">-->
+                    <!--<h4>Autostart</h4>-->
+                    <!--<div class="checkbox">-->
+                        <!--<label><input type="checkbox"> Start playing at startup</label>-->
+                    <!--</div>-->
+                <!--</td>-->
+            <!--</tr>-->
+        <!--</table>-->
 
-        <!--<br />-->
-        <!--<h4>Loop</h4>-->
-        <!--<input type="number" class="form-control" min="0" placeholder="0" style="width:50px" /> <small>0 for endless</small>-->
-
-            <input type="submit" value="Save" class="btn btn-success" disabled="disabled" id="btn-submit"/>
-
+        <input type="submit" value="Save" class="btn btn-success" disabled="disabled" id="btn-submit"/>
         </form>
     </div>
 
@@ -88,7 +99,7 @@
 $(function() {
     $( ".connectedSortable" ).sortable({
         connectWith: ".connectedSortable",
-        change: function(event, ui) { $("#btn-submit").prop("disabled", false); },
+        change: function(event, ui) { $("#btn-submit").prop("disabled", false); }
     }).disableSelection();
 });
 
