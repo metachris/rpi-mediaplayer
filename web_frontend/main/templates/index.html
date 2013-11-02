@@ -3,26 +3,30 @@
 {% block header_bottom %}
 <style>
     .connectedSortable { list-style-type: none; margin: 0; padding: 0 0 2.5em; float: left; margin-right: 10px; }
-    .connectedSortable li { margin: 0 5px 5px 5px; padding: 5px; font-size: 1.2em; width: 340px; cursor:pointer; }
+    .connectedSortable li { margin: 0 5px 5px 5px; padding: 5px; font-size: 1.2em; border: 1px solid lavender;
+        border-radius: 4px; cursor:pointer; }
+    #player_status { padding-left: 31px; color: #888; }
 </style>
 {% endblock %}
 
 {% block body %}
-<a href="javascript:playerd_cmd('do_play');" type="button" class="btn btn-default btn-sm">
+<a href="javascript:playerd_cmd('do_play');" type="button" class="btn btn-default btn-sm" id="btn_play">
     <span class="glyphicon glyphicon-play"></span>
 </a>
-<a href="javascript:playerd_cmd('do_stop');" type="button" class="btn btn-default btn-sm">
+<a href="javascript:playerd_cmd('do_stop');" type="button" class="btn btn-default btn-sm" id="btn_stop">
     <span class="glyphicon glyphicon-stop"></span>
 </a>
-<a href="javascript:playerd_cmd('do_first');" type="button" class="btn btn-default btn-sm">
+<a href="javascript:playerd_cmd('do_first');" type="button" class="btn btn-default btn-sm" id="btn_first">
     <span class="glyphicon glyphicon-fast-backward"></span>
 </a>
-<a href="javascript:playerd_cmd('do_prev');" type="button" class="btn btn-default btn-sm">
+<a href="javascript:playerd_cmd('do_prev');" type="button" class="btn btn-default btn-sm" id="btn_prev">
     <span class="glyphicon glyphicon-backward"></span>
 </a>
-<a href="javascript:playerd_cmd('do_next');" type="button" class="btn btn-default btn-sm">
+<a href="javascript:playerd_cmd('do_next');" type="button" class="btn btn-default btn-sm" id="btn_next">
     <span class="glyphicon glyphicon-forward"></span>
 </a>
+
+<span id="player_status"></span>
 
 <hr />
 
@@ -33,7 +37,7 @@
 
         <h2>Playlist </h2>
         <hr />
-        <ul id="sortable1" class="connectedSortable" style="border:1px solid #d3d3d3; width:100%;">
+        <ul id="sortable1" class="connectedSortable" style="width:100%;">
             {% for pf in playlist_files %}
                 <li class="ui-state-default"><span class="glyphicon glyphicon-{% if pf.media == 'video' %}film{% elif pf.media == 'audio' %}headphones{% elif pf.media == 'image' %}picture{% endif %}"></span> {{ pf.fn }} {% if not pf.existing %} <span class="label label-danger" style="font-size:60%;">File Missing</span>{% endif %}<input type="hidden" name="fn[]" value="{{ pf.fn }}" /></li>
             {% endfor %}
@@ -90,7 +94,40 @@ $(function() {
 function playerd_cmd(cmd) {
     $.ajax({
         url: "/ajax/player_cmd?cmd=" + cmd
-    }).done(function(data) {console.log(data);})
+    }).done(function(data) {
+        console.log(data);
+        update_status(data);
+    })
 }
+
+function get_status() {
+    $.ajax({
+        url: "/ajax/player_cmd?cmd=get_status",
+    }).done(function(data) {
+        console.log(data);
+        update_status(data);
+        setTimeout(get_status, 2000);
+    }).error(function(xhr, status, error) {
+        $("#player_status").html("playerd: " + error.toLowerCase());
+        setTimeout(get_status, 4000);
+    });
+}
+
+function update_status(data) {
+    data_cleaned = data.replace("{u'", "{'").replace(/[:][ ]u[']/g, ": '").replace(/[,][ ]u[']/g, ", '").replace(/[']/g, '"').replace(/[:][ ]None/g, ": false")
+    console.log(data_cleaned);
+    data_object = JSON.parse(data_cleaned);
+    $("#player_status").html(data_object.current_file);
+
+    $("#btn_play").removeClass("active");
+    $("#btn_stop").removeClass("active");
+    if (data_object.state == 0) {
+        $("#btn_stop").addClass("active");
+    } else {
+        $("#btn_play").addClass("active");
+    }
+}
+
+$(get_status);
 </script>
 {% endblock %}

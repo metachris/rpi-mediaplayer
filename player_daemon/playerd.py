@@ -54,11 +54,11 @@ def check_pid(pid):
 # Each connected client gets a TCPConnection object
 class TCPConnection(object):
     def __init__(self, daemon, stream, address):
-        logger.debug('- new connection from %s' % repr(address))
+#        logger.debug('- new connection from %s' % repr(address))
         self.daemon = daemon
         self.stream = stream
         self.address = address
-        self.stream.set_close_callback(self._on_close)
+#        self.stream.set_close_callback(self._on_close)
         self.stream.read_until('\n', self._on_read_line)
 
     def _on_read_line(self, data):
@@ -80,8 +80,8 @@ class TCPConnection(object):
     def _on_write_complete(self):
         pass
 
-    def _on_close(self):
-        logger.debug('- client quit %s' % repr(self.address))
+#    def _on_close(self):
+#        logger.debug('- client quit %s' % repr(self.address))
 
 
 # The main server class
@@ -217,6 +217,13 @@ class PlayerThread(Thread):
         time.sleep(1)
         self.player_start()
 
+    def get_status(self):
+        return {
+            "current_file": self.current_file,
+            "last_file": self.last_file,
+            "current_pid": self.current_pid,
+            "state": self.state
+        }
 
 class MyDaemon(Daemon):
     def run(self):
@@ -244,34 +251,32 @@ class MyDaemon(Daemon):
     def handle_msg(self, msg):
         # Handle incoming socket messages
         logger.info("msg: %s" % msg)
-        if msg == "get_current_file":
-            return { "current_file": self.playerthread.current_file }
-
-        elif msg == "get_status":
-            return {
-                "current_file": self.playerthread.current_file,
-                "last_file": self.playerthread.last_file,
-                "current_pid": self.playerthread.current_pid,
-                "state": self.playerthread.state
-            }
+        if msg == "get_status":
+            return self.playerthread.get_status()
 
         elif msg == "do_play":
             self.playerthread.player_start()
+            return self.playerthread.get_status()
 
         elif msg == "do_stop":
             self.playerthread.player_stop()
+            return self.playerthread.get_status()
 
         elif msg == "do_next":
             self.playerthread.player_next()
+            return self.playerthread.get_status()
 
         elif msg == "do_prev":
             self.playerthread.player_prev()
+            return self.playerthread.get_status()
 
         elif msg == "do_first":
             self.playerthread.player_first()
+            return self.playerthread.get_status()
 
         elif msg == "do_reload_playlist":
             self.playerthread.load_playlist()
+            return self.playerthread.get_status()
 
         else:
             return { "error": "command not understood" }
