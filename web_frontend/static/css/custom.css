@@ -1,3 +1,8 @@
 .monospace {
     font-family: Monaco,Menlo,Consolas,"Courier New",monospace;
 }
+
+.navbar-default { background-color: #FFEE71; }
+.navbar-default .navbar-brand {
+    color: #4B4B4B;
+}

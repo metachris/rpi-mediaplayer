@@ -117,7 +117,7 @@ function update_status(data) {
     data_cleaned = data.replace("{u'", "{'").replace(/[:][ ]u[']/g, ": '").replace(/[,][ ]u[']/g, ", '").replace(/[']/g, '"').replace(/[:][ ]None/g, ": false")
     console.log(data_cleaned);
     data_object = JSON.parse(data_cleaned);
-    $("#player_status").html(data_object.current_file);
+    $("#player_status").html(data_object.last_file);
 
     $("#btn_play").removeClass("active");
     $("#btn_stop").removeClass("active");

@@ -250,11 +250,12 @@ class MyDaemon(Daemon):
 
     def handle_msg(self, msg):
         # Handle incoming socket messages
-        logger.info("msg: %s" % msg)
+#        logger.info("msg: %s" % msg)
         if msg == "get_status":
             return self.playerthread.get_status()
 
-        elif msg == "do_play":
+        logger.info("msg: %s" % msg)
+        if msg == "do_play":
             self.playerthread.player_start()
             return self.playerthread.get_status()
 
