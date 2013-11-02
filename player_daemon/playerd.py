@@ -16,7 +16,7 @@ from daemon import Daemon
 
 from tornado.ioloop import IOLoop
 from tornado.tcpserver import TCPServer
-from tornado.escape import _unicode
+
 
 DIR_SCRIPT = os.path.dirname(os.path.realpath(__file__))
 
@@ -51,13 +51,6 @@ def check_pid(pid):
         return False
     else:
         return True
-
-
-def safe_unicode(s):
-    try:
-        return _unicode(s)
-    except UnicodeDecodeError:
-        return repr(s)
 
 
 # Each connected client gets a TCPConnection object
@@ -103,57 +96,119 @@ class MyTCPServer(TCPServer):
 
 
 class PlayerThread(Thread):
+    files = []
+    last_file = None
     current_file = None
     current_pid = None
+    cnt_file_current = 0
 
+    # states: 0=stopped, 1=playing
+    state = 0
+
+    # thread control flags
     is_cancelled = False
     is_finished = False
+
     def __init__(self):
         Thread.__init__(self)
+        self.files = playlist["playlist"]
+        self.cnt_file_current = 0
+        self.state = 0  # playing
 
     def run(self):
         while not self.is_finished and not self.is_cancelled:
-            for fn in playlist["playlist"]:
-                if self.is_finished or self.is_cancelled:
-                    return
+            if self.is_finished or self.is_cancelled:
+                return
 
-                if not os.path.isfile(fn):
-                    logger.error("Could not find file '%s'" % fn)
-                    continue
+            if self.state == 0:
+#                logger.info("PlayerThread paused. Wait 1 sec.")
+                time.sleep(1)
+                continue
 
-                ext = fn.split(".")[-1]
-                if ext in player_settings["media_extensions"]["video"]:
-                    cmd = player_settings["playback_commands"]["video"]
-                elif ext in player_settings["media_extensions"]["audio"]:
-                    cmd = player_settings["playback_commands"]["audio"]
-                elif ext in player_settings["media_extensions"]["image"]:
-                    cmd = player_settings["playback_commands"]["image"]
+            # Try to play file
+            fn = self.files[self.cnt_file_current]
+            logger.info("PlayerThread: trying to play file %s (#%s)" % (fn, self.cnt_file_current))
+            if not os.path.isfile(fn):
+                logger.error("Could not find file '%s'" % fn)
+                continue
 
-                # Prepare command to execute
-                self.current_file = fn.strip()
-                if " " in fn and not fn.startswith('"'):
-                    fn = '"%s"' % fn
-                cmd_list = cmd.split(" ")
-                for i in xrange(len(cmd_list)):
-                    if cmd_list[i] == "$1":
-                        cmd_list[i] = fn
+            # Find the right command
+            ext = fn.split(".")[-1]
+            if ext in player_settings["media_extensions"]["video"]:
+                cmd = player_settings["playback_commands"]["video"]
+            elif ext in player_settings["media_extensions"]["audio"]:
+                cmd = player_settings["playback_commands"]["audio"]
+            elif ext in player_settings["media_extensions"]["image"]:
+                cmd = player_settings["playback_commands"]["image"]
 
-                # Execute command and wait for it to finish
-                try:
-                    logger.info("Execute: %s" % (cmd_list))
-                    pipe = subprocess.Popen(cmd_list)
-                    self.current_pid = pipe.pid
-                    logger.info("- pid: %s" % self.current_pid)
-                    while pipe.poll() is None:
-                        time.sleep(1)
-                    self.current_file = None
-                    self.current_pid = None
-                    logger.info("- finished")
-                except Exception as e:
-                    logger.exception(e)
+            # Prepare command to execute
+            self.current_file = fn.strip()
+#            if " " in fn and not fn.startswith('"'):
+#                fn = '"%s"' % fn
+            cmd_list = cmd.split(" ")
+            for i in xrange(len(cmd_list)):
+                if cmd_list[i] == "$1":
+                    cmd_list[i] = fn
 
-    def stop(self, kill_player=False):
+            # Execute command and wait for it to finish
+            try:
+                logger.info("- execute: %s" % (cmd_list))
+                pipe = subprocess.Popen(cmd_list)
+                self.current_pid = pipe.pid
+                logger.info("- pid: %s" % self.current_pid)
+                while pipe.poll() is None:
+                    time.sleep(0.5)
+                self.last_file = self.current_file
+                self.current_file = None
+                self.current_pid = None
+                logger.info("- finished playback of '%s'" % fn)
+            except Exception as e:
+                logger.exception(e)
+
+            self.cnt_file_current = (self.cnt_file_current + 1) % len(self.files)
+
+    def shutdown(self, kill_player=False):
+        """ Shutdown """
+        logger.info("PlayerThread: shutdown()")
         self.is_finished = True
+        if kill_player:
+            self.player_stop()
+
+    def player_stop(self):
+        logger.info("PlayerThread: stop()")
+        if self.current_pid:
+            os.kill(self.current_pid, signal.SIGTERM)
+            logger.info("- killed '%s' with pid %s" % (self.current_file, self.current_pid))
+            self.cnt_file_current -= 1
+        self.current_file = None
+        self.current_pid = None
+        self.state = 0
+
+    def player_start(self):
+        logger.info("PlayerThread: start()")
+        if self.current_pid:
+            logger.info("- player already running with pid %s" % self.current_pid)
+            return
+        self.state = 1
+        logger.info("- started")
+
+    def player_next(self):
+        logger.info("PlayerThread: next()")
+        self.player_stop()
+        self.cnt_file_current = (self.cnt_file_current + 1) % len(self.files)
+        self.player_start()
+
+    def player_prev(self):
+        logger.info("PlayerThread: prev()")
+        self.player_stop()
+        self.cnt_file_current = (self.cnt_file_current - 1) % len(self.files)
+        self.player_start()
+
+    def player_first(self):
+        logger.info("PlayerThread: next()")
+        self.player_stop()
+        self.cnt_file_current = 0
+        self.player_start()
 
 
 class MyDaemon(Daemon):
@@ -166,6 +221,7 @@ class MyDaemon(Daemon):
             # Start Tornado
             server = MyTCPServer(self)
             server.listen(player_settings["playerd"]["port"])
+            logger.info("Player daemon started")
             IOLoop.instance().start()
 
         except SystemExit:
@@ -175,14 +231,37 @@ class MyDaemon(Daemon):
             logger.exception(e)
 
         finally:
-            self.playerthread.stop()
+            self.playerthread.shutdown()
             logger.info("Daemon stopped")
 
     def handle_msg(self, msg):
-        # Incoming network messages
+        # Handle incoming socket messages
         logger.info("msg: %s" % msg)
         if msg == "get_current_file":
             return { "current_file": self.playerthread.current_file }
+
+        elif msg == "get_status":
+            return {
+                "current_file": self.playerthread.current_file,
+                "last_file": self.playerthread.last_file,
+                "current_pid": self.playerthread.current_pid,
+                "state": self.playerthread.state
+            }
+
+        elif msg == "do_play":
+            self.playerthread.player_start()
+
+        elif msg == "do_stop":
+            self.playerthread.player_stop()
+
+        elif msg == "do_next":
+            self.playerthread.player_next()
+
+        elif msg == "do_prev":
+            self.playerthread.player_prev()
+
+        elif msg == "do_first":
+            self.playerthread.player_first()
 
 
 # Console start
